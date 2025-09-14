@@ -23,7 +23,7 @@
       font-weight: bold;
     }
     .container {
-      max-width: 1100px;
+      max-width: 1200px;
       margin: 30px auto;
       padding: 20px;
       background: rgba(255,255,255,0.05);
@@ -51,7 +51,7 @@
 </head>
 <body>
   <nav>
-    <a href="index.html">Rules</a>
+    <a href="rules.html">Rules</a>
     <a href="round1.html">Round 1</a>
     <a href="round2.html">Round 2</a>
     <a href="round3.html">Round 3</a>
@@ -68,21 +68,88 @@
           <th>Name</th>
           <th>Correct Answers</th>
           <th>Score</th>
+          <th>Submission Time</th>
         </tr>
       </thead>
       <tbody>
-        <!-- 25 rows -->
         <script>
+          let submissionTimes = Array(25).fill(null); // Track submission times
+
           for (let i = 1; i <= 25; i++) {
             document.write(`
               <tr>
                 <td>${i}</td>
                 <td><input type="text" id="name${i}" placeholder="Participant ${i}"></td>
-                <td><input type="number" id="correct${i}" min="0" max="20" oninput="updateScores()"></td>
+                <td><input type="number" id="correct${i}" min="0" max="20" oninput="updateScores(${i})"></td>
                 <td id="score${i}">0</td>
+                <td id="time${i}">--:--:--</td>
               </tr>
             `);
           }
+
+          function updateScores() {
+            let names = [];
+            let scores = [];
+            let times = [];
+
+            for (let i = 1; i <= 25; i++) {
+              let name = document.getElementById("name" + i).value || ("Participant " + i);
+              let correct = parseInt(document.getElementById("correct" + i).value) || 0;
+              let score = correct * 1;
+
+              document.getElementById("score" + i).innerText = score;
+
+              // Set submission time on first input
+              if (correct > 0 && !submissionTimes[i-1]) {
+                let now = new Date();
+                submissionTimes[i-1] = now;
+                document.getElementById("time" + i).innerText = now.toLocaleTimeString();
+              }
+
+              names.push(name);
+              scores.push(score);
+              times.push(submissionTimes[i-1]);
+            }
+
+            // Sort by score descending, then submission time ascending
+            let participants = names.map((n, idx) => ({ name: n, score: scores[idx], time: times[idx] }));
+            participants.sort((a, b) => {
+              if (b.score === a.score) {
+                if (!a.time) return 1; 
+                if (!b.time) return -1;
+                return a.time - b.time;
+              }
+              return b.score - a.score;
+            });
+
+            // Show top 8
+            let top8 = participants.slice(0, 8);
+            document.getElementById("selected").innerHTML =
+              top8.map((p, idx) => `<p>${idx + 1}. ${p.name} – ${p.score} pts (Time: ${p.time ? p.time.toLocaleTimeString() : '--:--:--'})</p>`).join("");
+
+            // Update chart
+            scoreChart.data.labels = names;
+            scoreChart.data.datasets[0].data = scores;
+            scoreChart.update();
+          }
+
+          // Chart.js setup
+          const ctx = document.getElementById('scoreChart').getContext('2d');
+          const scoreChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: [],
+              datasets: [{
+                label: 'Scores',
+                data: [],
+                backgroundColor: '#00e6c3'
+              }]
+            },
+            options: {
+              responsive: true,
+              scales: { y: { beginAtZero: true } }
+            }
+          });
         </script>
       </tbody>
     </table>
@@ -92,54 +159,5 @@
     <h2>Selected Participants (Top 8)</h2>
     <div id="selected"></div>
   </div>
-
-  <script>
-    function updateScores() {
-      let names = [];
-      let scores = [];
-
-      for (let i = 1; i <= 25; i++) {
-        let name = document.getElementById("name" + i).value || ("Participant " + i);
-        let correct = parseInt(document.getElementById("correct" + i).value) || 0;
-        let score = correct * 1; // Round 1 rule
-
-        document.getElementById("score" + i).innerText = score;
-
-        names.push(name);
-        scores.push(score);
-      }
-
-      // Update chart
-      scoreChart.data.labels = names;
-      scoreChart.data.datasets[0].data = scores;
-      scoreChart.update();
-
-      // Sort and select top 8
-      let participants = names.map((n, idx) => ({ name: n, score: scores[idx] }));
-      participants.sort((a, b) => b.score - a.score);
-      let top8 = participants.slice(0, 8);
-
-      document.getElementById("selected").innerHTML =
-        top8.map((p, idx) => `<p>${idx + 1}. ${p.name} – ${p.score} points</p>`).join("");
-    }
-
-    // Chart.js setup
-    const ctx = document.getElementById('scoreChart').getContext('2d');
-    const scoreChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: [],
-        datasets: [{
-          label: 'Scores',
-          data: [],
-          backgroundColor: '#00e6c3'
-        }]
-      },
-      options: {
-        responsive: true,
-        scales: { y: { beginAtZero: true } }
-      }
-    });
-  </script>
 </body>
 </html>
