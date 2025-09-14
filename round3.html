@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tech Quiz - Round 3</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #0a0f1e, #1b2735);
+      color: #f0f0f0;
+    }
+    nav {
+      background: #111827;
+      padding: 15px;
+      text-align: center;
+    }
+    nav a {
+      color: #00e6c3;
+      text-decoration: none;
+      margin: 0 15px;
+      font-weight: bold;
+    }
+    .container {
+      max-width: 700px;
+      margin: 30px auto;
+      padding: 20px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #333;
+      padding: 8px;
+      text-align: center;
+    }
+    th { background: #00e6c3; color: #000; }
+    input {
+      width: 80%;
+      padding: 4px;
+      text-align: center;
+    }
+    h2 { color: #00e6c3; }
+    #winner { background: rgba(0,230,195,0.1); padding: 10px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="rules.html">Rules</a>
+    <a href="round1.html">Round 1</a>
+    <a href="round2.html">Round 2</a>
+    <a href="round3.html">Round 3</a>
+  </nav>
+
+  <div class="container">
+    <h1>Round 3: Rapid Fire</h1>
+    <p>Enter participant names, number of answers given, and correct answers.</p>
+
+    <table id="participantsTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Answers Given</th>
+          <th>Correct</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        <script>
+          for (let i = 1; i <= 4; i++) {
+            document.write(`
+              <tr>
+                <td>${i}</td>
+                <td><input type="text" id="name${i}" placeholder="Participant ${i}"></td>
+                <td><input type="number" id="given${i}" min="0" oninput="updateScores()"></td>
+                <td><input type="number" id="correct${i}" min="0" oninput="updateScores()"></td>
+                <td id="score${i}">0</td>
+              </tr>
+            `);
+          }
+        </script>
+      </tbody>
+    </table>
+
+    <canvas id="scoreChart" height="120"></canvas>
+
+    <h2>Winner</h2>
+    <div id="winner"></div>
+  </div>
+
+  <script>
+    function updateScores() {
+      let names = [];
+      let scores = [];
+
+      for (let i = 1; i <= 4; i++) {
+        let name = document.getElementById("name" + i).value || ("Participant " + i);
+        let given = parseInt(document.getElementById("given" + i).value) || 0;
+        let correct = parseInt(document.getElementById("correct" + i).value) || 0;
+
+        if (correct > given) correct = given; // sanity check
+
+        let wrong = given - correct;
+        let score = (correct * 3) - (wrong * 1.5);
+
+        document.getElementById("score" + i).innerText = score.toFixed(1);
+
+        names.push(name);
+        scores.push(score);
+      }
+
+      // Update chart
+      scoreChart.data.labels = names;
+      scoreChart.data.datasets[0].data = scores;
+      scoreChart.data.datasets[0].backgroundColor = scores.map((s, idx) => s >= Math.max(...scores) ? 'rgba(0,230,195,0.9)' : 'rgba(255,255,255,0.12)');
+      scoreChart.update();
+
+      // Determine winner
+      let participants = names.map((n, idx) => ({ name: n, score: scores[idx] }));
+      participants.sort((a, b) => b.score - a.score);
+      let winner = participants[0];
+      document.getElementById("winner").innerHTML = `<strong>${winner.name}</strong> – ${winner.score.toFixed(1)} points`;
+    }
+
+    // Chart.js setup
+    const ctx = document.getElementById('scoreChart').getContext('2d');
+    const scoreChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Scores',
+          data: [],
+          backgroundColor: '#00e6c3'
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+  </script>
+</body>
+</html>
